@@ -14,7 +14,7 @@ export default function VideoActions({
 }) {
   const actions = [
     {
-      label: likes.toLocaleString(),
+      label: new Intl.NumberFormat("en-US").format(likes),
       icon: ThumbsUp,
     },
     {
