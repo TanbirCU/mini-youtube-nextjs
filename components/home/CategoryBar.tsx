@@ -3,8 +3,18 @@
 import { useState } from "react";
 import { categories } from "@/data/categories";
 
-export default function CategoryBar() {
-  const [selected, setSelected] = useState("All");
+interface CategoryBarProps {
+  selectedCategory?: string;
+  onSelectCategory?: (category: string) => void;
+}
+
+export default function CategoryBar({
+  selectedCategory,
+  onSelectCategory,
+}: CategoryBarProps = {}) {
+  const [internalSelected, setInternalSelected] = useState("All");
+  const selected = selectedCategory ?? internalSelected;
+  const handleSelect = onSelectCategory ?? setInternalSelected;
 
   return (
     <div className="sticky top-16 z-30 overflow-x-auto border-b bg-white">
@@ -12,7 +22,7 @@ export default function CategoryBar() {
         {categories.map((category) => (
           <button
             key={category}
-            onClick={() => setSelected(category)}
+            onClick={() => handleSelect(category)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
               selected === category
                 ? "bg-gray-900 text-white"
