@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Bookmark,
   Share2,
@@ -8,26 +8,37 @@ import {
   ThumbsUp,
   Check,
 } from "lucide-react";
+import { isLikedVideo, toggleLikedVideo, isSavedVideo, toggleSavedVideo } from "@/lib/utils";
+
+interface VideoActionsProps {
+  videoId: number;
+  likes: number;
+}
 
 export default function VideoActions({
+  videoId,
   likes,
-}: {
-  likes: number;
-}) {
+}: VideoActionsProps) {
   const [likeCount, setLikeCount] = useState(likes || 0);
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Initialize liked and saved states from localStorage
+  useEffect(() => {
+    if (videoId) {
+      setIsLiked(isLikedVideo(videoId));
+      setIsSaved(isSavedVideo(videoId));
+    }
+  }, [videoId]);
+
   const handleLike = () => {
-    if (isLiked) {
-      setIsLiked(false);
-      setLikeCount((prev) => Math.max(0, prev - 1));
-    } else {
-      setIsLiked(true);
-      setLikeCount((prev) => prev + 1);
-      if (isDisliked) setIsDisliked(false);
+    const newLikedState = toggleLikedVideo(videoId);
+    setIsLiked(newLikedState);
+    setLikeCount((prev) => (newLikedState ? prev + 1 : Math.max(0, prev - 1)));
+    if (newLikedState && isDisliked) {
+      setIsDisliked(false);
     }
   };
 
@@ -37,6 +48,7 @@ export default function VideoActions({
     } else {
       setIsDisliked(true);
       if (isLiked) {
+        toggleLikedVideo(videoId);
         setIsLiked(false);
         setLikeCount((prev) => Math.max(0, prev - 1));
       }
@@ -52,7 +64,8 @@ export default function VideoActions({
   };
 
   const handleSave = () => {
-    setIsSaved(!isSaved);
+    const nextSaved = toggleSavedVideo(videoId);
+    setIsSaved(nextSaved);
   };
 
   const formattedLikes = new Intl.NumberFormat("en-US", {

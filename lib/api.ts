@@ -21,4 +21,5 @@ export const API_ENDPOINTS = {
     `${API_BASE_URL}/comments/${commentId}`,
   SUBSCRIBE: (channelId: string | number) =>
     `${API_BASE_URL}/channels/${channelId}/subscribe`,
+  MY_SUBSCRIPTIONS: `${API_BASE_URL}/subscriptions`,
 } as const;

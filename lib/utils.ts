@@ -93,3 +93,212 @@ export function mapBackendVideoToVideo(item: any): Video {
     videoUrl,
   };
 }
+
+// ==========================================
+// WATCH HISTORY HELPERS
+// ==========================================
+export interface WatchHistoryEntry {
+  videoId: number;
+  watchedAt: number; // Date.now() timestamp
+}
+
+export function addToWatchHistory(videoId: number) {
+  if (typeof window === "undefined" || !videoId) return;
+  try {
+    const raw = localStorage.getItem("minitube_watch_history");
+    let history: WatchHistoryEntry[] = raw ? JSON.parse(raw) : [];
+    // Remove if already exists to bring to top
+    history = history.filter((item) => item.videoId !== videoId);
+    history.unshift({ videoId, watchedAt: Date.now() });
+    // Keep max 100 items
+    if (history.length > 100) history = history.slice(0, 100);
+    localStorage.setItem("minitube_watch_history", JSON.stringify(history));
+  } catch {}
+}
+
+export function getWatchHistory(): WatchHistoryEntry[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("minitube_watch_history");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function removeFromWatchHistory(videoId: number): WatchHistoryEntry[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const history = getWatchHistory().filter((item) => item.videoId !== videoId);
+    localStorage.setItem("minitube_watch_history", JSON.stringify(history));
+    return history;
+  } catch {
+    return [];
+  }
+}
+
+export function clearWatchHistory() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("minitube_watch_history");
+  } catch {}
+}
+
+// ==========================================
+// LIKED VIDEOS HELPERS
+// ==========================================
+export function getLikedVideos(): number[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("minitube_liked_videos");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function isLikedVideo(videoId: number): boolean {
+  return getLikedVideos().includes(videoId);
+}
+
+export function toggleLikedVideo(videoId: number): boolean {
+  if (typeof window === "undefined" || !videoId) return false;
+  try {
+    let liked = getLikedVideos();
+    const isCurrentlyLiked = liked.includes(videoId);
+    if (isCurrentlyLiked) {
+      liked = liked.filter((id) => id !== videoId);
+    } else {
+      liked.unshift(videoId);
+    }
+    localStorage.setItem("minitube_liked_videos", JSON.stringify(liked));
+    return !isCurrentlyLiked;
+  } catch {
+    return false;
+  }
+}
+
+// ==========================================
+// SAVED VIDEOS HELPERS
+// ==========================================
+export function getSavedVideos(): number[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("minitube_saved_videos");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function isSavedVideo(videoId: number): boolean {
+  return getSavedVideos().includes(videoId);
+}
+
+export function toggleSavedVideo(videoId: number): boolean {
+  if (typeof window === "undefined" || !videoId) return false;
+  try {
+    let saved = getSavedVideos();
+    const isCurrentlySaved = saved.includes(videoId);
+    if (isCurrentlySaved) {
+      saved = saved.filter((id) => id !== videoId);
+    } else {
+      saved.unshift(videoId);
+    }
+    localStorage.setItem("minitube_saved_videos", JSON.stringify(saved));
+    return !isCurrentlySaved;
+  } catch {
+    return false;
+  }
+}
+
+export function removeSavedVideo(videoId: number): number[] {
+  if (typeof window === "undefined" || !videoId) return [];
+  try {
+    const saved = getSavedVideos().filter((id) => id !== videoId);
+    localStorage.setItem("minitube_saved_videos", JSON.stringify(saved));
+    return saved;
+  } catch {
+    return [];
+  }
+}
+
+export function clearSavedVideos() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("minitube_saved_videos");
+  } catch {}
+}
+
+// ==========================================
+// PLAYLIST HELPERS
+// ==========================================
+export interface CustomPlaylist {
+  id: string;
+  name: string;
+  description?: string;
+  videoIds: number[];
+  createdAt: string;
+}
+
+export function getPlaylists(): CustomPlaylist[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("minitube_custom_playlists");
+    if (!raw) {
+      const defaultPlaylists: CustomPlaylist[] = [
+        {
+          id: "favorites",
+          name: "Favorites",
+          description: "Curated collection of great content",
+          videoIds: [3, 1],
+          createdAt: new Date().toISOString(),
+        },
+      ];
+      localStorage.setItem(
+        "minitube_custom_playlists",
+        JSON.stringify(defaultPlaylists)
+      );
+      return defaultPlaylists;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function savePlaylists(playlists: CustomPlaylist[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(
+      "minitube_custom_playlists",
+      JSON.stringify(playlists)
+    );
+  } catch {}
+}
+
+export function createPlaylist(
+  name: string,
+  description: string = "",
+  videoIds: number[] = []
+): CustomPlaylist {
+  const newPlaylist: CustomPlaylist = {
+    id: "pl_" + Date.now(),
+    name,
+    description,
+    videoIds,
+    createdAt: new Date().toISOString(),
+  };
+  const list = getPlaylists();
+  list.unshift(newPlaylist);
+  savePlaylists(list);
+  return newPlaylist;
+}
+
+export function deletePlaylist(id: string): CustomPlaylist[] {
+  const list = getPlaylists().filter((p) => p.id !== id);
+  savePlaylists(list);
+  return list;
+}
+
+

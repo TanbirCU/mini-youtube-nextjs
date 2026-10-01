@@ -6,6 +6,7 @@ import VideoActions from "@/components/video/VideoActions";
 import SubscribeButton from "@/components/video/SubscribeButton";
 import RelatedVideos from "@/components/video/RelatedVideos";
 import CommentSection from "@/components/video/CommentSection";
+import WatchTracker from "@/components/video/WatchTracker";
 import { API_ENDPOINTS } from "@/lib/api";
 import { mapBackendVideoToVideo } from "@/lib/utils";
 import { videos as staticVideos } from "@/data/videos";
@@ -78,6 +79,9 @@ export default async function WatchPage({
     <div className="px-4 py-6 sm:px-6">
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div>
+          {/* Watch Tracker */}
+          <WatchTracker videoId={video.id} />
+
           {/* Real Video Player with controls */}
           <VideoPlayer
             src={video.videoUrl}
@@ -89,7 +93,7 @@ export default async function WatchPage({
           <VideoInfo video={video} />
 
           {/* Video Action Buttons (Like, Share, Save) */}
-          <VideoActions likes={video.likes || 0} />
+          <VideoActions videoId={video.id} likes={video.likes || 0} />
 
           {/* Channel Info & Subscribe Bar */}
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
