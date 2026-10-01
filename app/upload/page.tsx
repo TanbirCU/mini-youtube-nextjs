@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
+import Toaster, { ToastItem, ToastType } from "@/components/common/Toast";
 
 interface Category {
   id: number;
@@ -23,6 +24,18 @@ interface Category {
 
 export default function UploadPage() {
   const router = useRouter();
+
+  // Toast notifications
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  const addToast = (type: ToastType, message: string, title?: string) => {
+    const id = Date.now().toString() + Math.random().toString(36).slice(2, 6);
+    setToasts((prev) => [...prev, { id, type, message, title }]);
+  };
+
+  const dismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   // Categories from database
   const [categories, setCategories] = useState<Category[]>([]);
@@ -90,6 +103,7 @@ export default function UploadPage() {
       } catch (err: any) {
         console.error("Error fetching categories:", err);
         setError("Could not load categories from database.");
+        addToast("warning", "Could not load categories from database.", "Categories Notice");
       } finally {
         setLoadingCategories(false);
       }
@@ -102,11 +116,27 @@ export default function UploadPage() {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       if (!selectedFile.name.toLowerCase().endsWith(".mp4")) {
-        setError("Only MP4 videos are supported by the server");
+        const msg = "Only MP4 videos are supported. Please select an .mp4 file.";
+        setError(msg);
+        addToast("error", msg, "Unsupported Format");
         return;
       }
+
+      if (selectedFile.size > 500 * 1024 * 1024) {
+        const msg = "Video file size exceeds the 500MB maximum limit.";
+        setError(msg);
+        addToast("error", msg, "File Too Large");
+        return;
+      }
+
       setFile(selectedFile);
       setError(null);
+      addToast(
+        "info",
+        `Selected "${selectedFile.name}" (${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)`,
+        "Video Selected"
+      );
+
       // Auto fill title if empty
       if (!title) {
         const autoTitle = selectedFile.name.replace(/\.[^/.]+$/, "");
@@ -122,26 +152,35 @@ export default function UploadPage() {
 
     const token = localStorage.getItem("token");
     if (!token) {
-      setError("Please sign in to upload videos");
+      const msg = "Please sign in to upload videos";
+      setError(msg);
+      addToast("error", msg, "Authentication Required");
       return;
     }
 
     if (!file) {
-      setError("Please select a video file (.mp4)");
+      const msg = "Please select a video file (.mp4)";
+      setError(msg);
+      addToast("warning", msg, "No Video Selected");
       return;
     }
 
     if (!title.trim()) {
-      setError("Please provide a video title");
+      const msg = "Please provide a video title";
+      setError(msg);
+      addToast("warning", msg, "Title Required");
       return;
     }
 
     if (!categoryId) {
-      setError("Please select a category");
+      const msg = "Please select a category";
+      setError(msg);
+      addToast("warning", msg, "Category Required");
       return;
     }
 
     setLoading(true);
+    addToast("info", "Starting video upload and processing...", "Uploading Video");
 
     try {
       const formData = new FormData();
@@ -164,12 +203,17 @@ export default function UploadPage() {
         throw new Error(data.message || "Failed to upload video");
       }
 
-      setSuccess("Video uploaded successfully! Redirecting...");
+      const successMsg = "Video uploaded successfully! Redirecting to your channel...";
+      setSuccess(successMsg);
+      addToast("success", successMsg, "Upload Complete");
+
       setTimeout(() => {
         router.push("/channel");
       }, 1500);
     } catch (err: any) {
-      setError(err.message || "Something went wrong during upload");
+      const errorMsg = err.message || "Something went wrong during upload";
+      setError(errorMsg);
+      addToast("error", errorMsg, "Upload Failed");
     } finally {
       setLoading(false);
     }
@@ -177,6 +221,9 @@ export default function UploadPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+      {/* Toast Notification Container */}
+      <Toaster toasts={toasts} onDismiss={dismissToast} />
+
       <h1 className="text-2xl font-bold text-gray-900">Upload video</h1>
       <p className="mt-1 text-sm text-gray-500">
         Share your video with the world.
@@ -184,16 +231,34 @@ export default function UploadPage() {
 
       {/* Notifications */}
       {error && (
-        <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-          <AlertCircle size={18} className="shrink-0" />
-          <span>{error}</span>
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={18} className="shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="text-red-400 hover:text-red-600"
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
 
       {success && (
-        <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-          <CheckCircle2 size={18} className="shrink-0" />
-          <span>{success}</span>
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={18} className="shrink-0" />
+            <span>{success}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSuccess(null)}
+            className="text-emerald-500 hover:text-emerald-700"
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
 
