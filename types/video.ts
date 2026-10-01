@@ -5,11 +5,12 @@ export interface Video {
   channelName: string;
   channelAvatar: string;
   thumbnail: string;
-  duration: string;
+  duration?: string;
   views: number;
   uploadedAt: string;
   category: string;
   description: string;
-  likes: number;
-  comments: number;
+  likes?: number;
+  comments?: number;
+  videoUrl?: string;
 }
