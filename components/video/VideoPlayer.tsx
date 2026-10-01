@@ -43,6 +43,7 @@ export default function VideoPlayer({
   const [showControls, setShowControls] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoplayMutedNotice, setAutoplayMutedNotice] = useState(false);
 
   // Play / Pause toggle
   const togglePlay = useCallback(() => {
@@ -56,6 +57,37 @@ export default function VideoPlayer({
     }
   }, [isPlaying]);
 
+  // Autoplay on load or src change
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !src) return;
+
+    setError(null);
+
+    // Try unmuted autoplay first (succeeds if user already clicked on previous page)
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(() => {
+          // Browser policy blocked unmuted sound -> fallback to muted autoplay so video starts immediately!
+          video.muted = true;
+          setIsMuted(true);
+          video
+            .play()
+            .then(() => {
+              setIsPlaying(true);
+              setAutoplayMutedNotice(true);
+            })
+            .catch((err) => {
+              console.warn("Autoplay was prevented by browser:", err);
+            });
+        });
+    }
+  }, [src]);
+
   // Volume change
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
@@ -65,6 +97,7 @@ export default function VideoPlayer({
       videoRef.current.muted = val === 0;
     }
     setIsMuted(val === 0);
+    setAutoplayMutedNotice(false);
   };
 
   // Mute toggle
@@ -77,6 +110,7 @@ export default function VideoPlayer({
       setVolume(0.5);
       videoRef.current.volume = 0.5;
     }
+    setAutoplayMutedNotice(false);
   };
 
   // Seek
@@ -131,7 +165,6 @@ export default function VideoPlayer({
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept if user is typing in input/textarea
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
@@ -169,8 +202,9 @@ export default function VideoPlayer({
         ref={videoRef}
         src={src}
         poster={poster}
-        preload="metadata"
+        autoPlay
         playsInline
+        preload="auto"
         onClick={togglePlay}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
@@ -192,6 +226,23 @@ export default function VideoPlayer({
         className="h-full w-full cursor-pointer object-contain"
       />
 
+      {/* Autoplay Muted Notice Banner */}
+      {autoplayMutedNotice && isMuted && isPlaying && (
+        <button
+          onClick={() => {
+            if (videoRef.current) {
+              videoRef.current.muted = false;
+            }
+            setIsMuted(false);
+            setAutoplayMutedNotice(false);
+          }}
+          className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full bg-black/75 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-black/95 active:scale-95 animate-in fade-in"
+        >
+          <VolumeX size={15} className="text-red-400" />
+          <span>Click to unmute</span>
+        </button>
+      )}
+
       {/* Buffering Indicator */}
       {isBuffering && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-xs">
@@ -199,7 +250,7 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {/* Big Center Play Button when paused */}
+      {/* Center Play Button when paused */}
       {!isPlaying && (
         <div
           onClick={togglePlay}
@@ -218,14 +269,18 @@ export default function VideoPlayer({
       {/* Error Banner */}
       {error && !src && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/90 p-6 text-center text-white">
-          <p className="text-sm font-medium text-gray-300">No video stream available</p>
+          <p className="text-sm font-medium text-gray-300">
+            No video stream available
+          </p>
         </div>
       )}
 
       {/* Controls Overlay */}
       <div
         className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 transition-opacity duration-300 ${
-          showControls || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
+          showControls || !isPlaying
+            ? "opacity-100"
+            : "opacity-0 pointer-events-none"
         }`}
       >
         {/* Progress Bar / Scrubber */}
@@ -253,7 +308,11 @@ export default function VideoPlayer({
               className="p-1 transition hover:text-red-500"
               aria-label={isPlaying ? "Pause" : "Play"}
             >
-              {isPlaying ? <Pause size={22} /> : <Play size={22} className="fill-white" />}
+              {isPlaying ? (
+                <Pause size={22} />
+              ) : (
+                <Play size={22} className="fill-white" />
+              )}
             </button>
 
             {/* Volume Control */}

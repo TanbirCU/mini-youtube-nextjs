@@ -77,6 +77,7 @@ export default function SubscribeButton({
         list = list.filter((id) => id !== channelId);
       }
       localStorage.setItem("minitube_subscriptions", JSON.stringify(list));
+      window.dispatchEvent(new Event("subscriptionChange"));
     } catch {}
 
     // Call API if token exists

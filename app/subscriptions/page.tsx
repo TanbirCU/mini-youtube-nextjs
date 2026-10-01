@@ -135,6 +135,7 @@ export default function SubscriptionsPage() {
     setSubscribedIds(nextList);
     try {
       localStorage.setItem("minitube_subscriptions", JSON.stringify(nextList));
+      window.dispatchEvent(new Event("subscriptionChange"));
     } catch {}
 
     const token = localStorage.getItem("token");

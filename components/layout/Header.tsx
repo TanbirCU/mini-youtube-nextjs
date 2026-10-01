@@ -117,6 +117,19 @@ export default function Header() {
     return "U";
   };
 
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    setMobileSearch(false);
+    if (!q) {
+      router.push("/");
+    } else {
+      router.push(`/search?q=${encodeURIComponent(q)}`);
+    }
+  };
+
   return (
     <header className="fixed left-0 right-0 top-0 z-50 h-16 border-b bg-white">
       <div className="flex h-full items-center gap-3 px-4">
@@ -135,35 +148,71 @@ export default function Header() {
         </Link>
 
         {mobileSearch ? (
-          <div className="flex flex-1 items-center">
-            <input
-              autoFocus
-              placeholder="Search videos..."
-              className="h-10 w-full rounded-l-full border border-gray-300 px-4 outline-none focus:border-gray-500"
-            />
+          <form onSubmit={handleSearchSubmit} className="flex flex-1 items-center">
+            <div className="relative flex-1">
+              <input
+                autoFocus
+                type="text"
+                placeholder="Search videos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-10 w-full rounded-l-full border border-gray-300 pl-4 pr-9 outline-none focus:border-gray-500 text-sm"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </div>
 
-            <button className="h-10 rounded-r-full border border-l-0 bg-gray-100 px-5">
-              <Search size={20} />
+            <button
+              type="submit"
+              className="h-10 rounded-r-full border border-l-0 border-gray-300 bg-gray-100 px-5 text-gray-700 hover:bg-gray-200"
+            >
+              <Search size={18} />
             </button>
 
             <button
+              type="button"
               onClick={() => setMobileSearch(false)}
-              className="ml-2 p-2"
+              className="ml-2 rounded-full p-2 text-gray-500 hover:bg-gray-100"
             >
               <X size={20} />
             </button>
-          </div>
+          </form>
         ) : (
-          <div className="mx-auto hidden max-w-2xl flex-1 md:flex">
-            <input
-              placeholder="Search videos..."
-              className="h-10 w-full rounded-l-full border border-gray-300 px-5 outline-none focus:border-gray-500"
-            />
+          <form onSubmit={handleSearchSubmit} className="mx-auto hidden max-w-2xl flex-1 items-center md:flex">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Search videos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-10 w-full rounded-l-full border border-gray-300 pl-5 pr-10 outline-none transition focus:border-gray-500 focus:ring-1 focus:ring-gray-400 text-sm"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
 
-            <button className="h-10 rounded-r-full border border-l-0 bg-gray-100 px-6 hover:bg-gray-200">
-              <Search size={20} />
+            <button
+              type="submit"
+              aria-label="Search"
+              className="flex h-10 items-center justify-center rounded-r-full border border-l-0 border-gray-300 bg-gray-100 px-6 text-gray-700 transition hover:bg-gray-200"
+            >
+              <Search size={18} />
             </button>
-          </div>
+          </form>
         )}
 
         {!mobileSearch && (
